@@ -31,7 +31,8 @@ class ESRGANModel(SRGANModel):
                 l_g_percep, l_g_style = self.cri_perceptual(self.output, self.gt)
                 l_g_percep_2, l_g_style_2 = self.cri_perceptual(self.output_2x, self.gt)
                 l_g_percep = ( l_g_percep + l_g_percep_2 ) /2
-                l_g_style = ( l_g_style + l_g_style_2 ) /2
+                if l_g_style is not None:
+                    l_g_style = ( l_g_style + l_g_style_2 ) /2
                 if l_g_percep is not None:
                     l_g_total += l_g_percep
                     loss_dict['l_g_percep'] = l_g_percep
