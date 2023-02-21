@@ -15,8 +15,8 @@ class ESRGANModel(SRGANModel):
             p.requires_grad = False
 
         self.optimizer_g.zero_grad()
-        self.output = self.net_g(self.lq)
-        self.output_2x = self.net_g(self.output)
+        self.output = self.net_g(self.lq) + self.lq
+        self.output_2x = self.net_g(self.output) + self.output
 
         l_g_total = 0
         loss_dict = OrderedDict()
