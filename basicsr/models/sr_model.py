@@ -91,22 +91,26 @@ class SRModel(BaseModel):
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
-        self.output = self.net_g(self.lq)
+        self.output = self.net_g(self.lq) + self.lq
+        self.output_2x = self.net_g(self.output) + self.output
 
         l_total = 0
         loss_dict = OrderedDict()
         # pixel loss
         if self.cri_pix:
-            l_pix = self.cri_pix(self.output, self.gt)
+            l_pix = ( self.cri_pix(self.output, self.gt) + self.cri_pix(self.output_2x, self.gt) ) / 2
             l_total += l_pix
             loss_dict['l_pix'] = l_pix
         # perceptual loss
         if self.cri_perceptual:
             l_percep, l_style = self.cri_perceptual(self.output, self.gt)
+            l_percep_2, l_style_2 = self.cri_perceptual(self.output_2, self.gt)
             if l_percep is not None:
+                l_percep = ( l_percep + l_percep_2 ) / 2
                 l_total += l_percep
                 loss_dict['l_percep'] = l_percep
             if l_style is not None:
+                l_style = ( l_style + l_style_2 ) / 2
                 l_total += l_style
                 loss_dict['l_style'] = l_style
 
@@ -122,11 +126,13 @@ class SRModel(BaseModel):
         if hasattr(self, 'net_g_ema'):
             self.net_g_ema.eval()
             with torch.no_grad():
-                self.output = self.net_g_ema(self.lq) + self.lq
+                self.tmp = self.net_g_ema(self.lq) + self.lq
+                self.output = self.net_g_ema(self.tmp) + self.tmp
         else:
             self.net_g.eval()
             with torch.no_grad():
-                self.output = self.net_g(self.lq) + self.lq
+                self.tmp = self.net_g(self.lq) + self.lq
+                self.output = self.net_g(self.tmp) + self.tmp
             self.net_g.train()
 
     def test_selfensemble(self):
