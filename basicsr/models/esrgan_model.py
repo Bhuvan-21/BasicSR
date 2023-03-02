@@ -19,6 +19,7 @@ class ESRGANModel(SRGANModel):
         self.output_2x = self.net_g(self.output.clone().detach()) + self.output.clone().detach()
 
         l_g_total = 0
+        l_g_total_2 = 0
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
             # pixel loss
@@ -34,10 +35,10 @@ class ESRGANModel(SRGANModel):
                     l_g_style = ( l_g_style ) /2
                 if l_g_percep is not None:
                     l_g_total += l_g_percep
-                    loss_dict['l_g_percep'] += l_g_percep
+                    loss_dict['l_g_percep'] = l_g_percep
                 if l_g_style is not None:
                     l_g_total += l_g_style
-                    loss_dict['l_g_style'] += l_g_style
+                    loss_dict['l_g_style'] = l_g_style
             # gan loss (relativistic gan)
             real_d_pred = self.net_d(self.gt).detach()
             fake_g_pred = self.net_d(self.output)
@@ -60,10 +61,10 @@ class ESRGANModel(SRGANModel):
                     l_g_style_2 = ( l_g_style_2 ) /2
                 if l_g_percep_2 is not None:
                     l_g_total_2 += l_g_percep_2
-                    loss_dict['l_g_percep_2'] += l_g_percep_2
+                    loss_dict['l_g_percep_2'] = l_g_percep_2
                 if l_g_style_2 is not None:
                     l_g_total_2 += l_g_style_2
-                    loss_dict['l_g_style_2'] += l_g_style_2
+                    loss_dict['l_g_style_2'] = l_g_style_2
             # gan loss (relativistic gan)
             real_d_pred = self.net_d(self.gt).detach()
             fake_g_pred_2x = self.net_d(self.output_2x)
