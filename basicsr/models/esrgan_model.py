@@ -23,35 +23,58 @@ class ESRGANModel(SRGANModel):
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
             # pixel loss
             if self.cri_pix:
-                l_g_pix = ( self.cri_pix(self.output, self.gt) + self.cri_pix(self.output_2x, self.gt) ) / 2
+                l_g_pix = ( self.cri_pix(self.output, self.gt) ) / 2
                 l_g_total += l_g_pix
                 loss_dict['l_g_pix'] = l_g_pix
             # perceptual loss
             if self.cri_perceptual:
                 l_g_percep, l_g_style = self.cri_perceptual(self.output, self.gt)
-                l_g_percep_2, l_g_style_2 = self.cri_perceptual(self.output_2x, self.gt)
-                l_g_percep = ( l_g_percep + l_g_percep_2 ) /2
+                l_g_percep = ( l_g_percep ) /2
                 if l_g_style is not None:
-                    l_g_style = ( l_g_style + l_g_style_2 ) /2
+                    l_g_style = ( l_g_style ) /2
                 if l_g_percep is not None:
                     l_g_total += l_g_percep
-                    loss_dict['l_g_percep'] = l_g_percep
+                    loss_dict['l_g_percep'] += l_g_percep
                 if l_g_style is not None:
                     l_g_total += l_g_style
-                    loss_dict['l_g_style'] = l_g_style
+                    loss_dict['l_g_style'] += l_g_style
             # gan loss (relativistic gan)
             real_d_pred = self.net_d(self.gt).detach()
             fake_g_pred = self.net_d(self.output)
-            fake_g_pred_2x = self.net_d(self.output_2x)
             l_g_real = self.cri_gan(real_d_pred - torch.mean(fake_g_pred), False, is_disc=False)
-            l_g_fake = ( self.cri_gan(fake_g_pred - torch.mean(real_d_pred), True, is_disc=False) + \
-                self.cri_gan(fake_g_pred_2x - torch.mean(real_d_pred), True, is_disc=False) ) / 2
+            l_g_fake = ( self.cri_gan(fake_g_pred - torch.mean(real_d_pred), True, is_disc=False) ) / 2
             l_g_gan = (l_g_real + l_g_fake) / 2
 
             l_g_total += l_g_gan
-            loss_dict['l_g_gan'] = l_g_gan
-
             l_g_total.backward()
+            
+            if self.cri_pix:
+                l_g_pix_2 = self.cri_pix(self.output_2x, self.gt) / 2
+                l_g_total_2 += l_g_pix_2
+                loss_dict['l_g_pix_2'] = l_g_pix_2
+            # perceptual loss
+            if self.cri_perceptual:
+                l_g_percep_2, l_g_style_2 = self.cri_perceptual(self.output_2x, self.gt)
+                l_g_percep_2 /= 2
+                if l_g_style_2 is not None:
+                    l_g_style_2 = ( l_g_style_2 ) /2
+                if l_g_percep_2 is not None:
+                    l_g_total_2 += l_g_percep_2
+                    loss_dict['l_g_percep_2'] += l_g_percep_2
+                if l_g_style_2 is not None:
+                    l_g_total_2 += l_g_style_2
+                    loss_dict['l_g_style_2'] += l_g_style_2
+            # gan loss (relativistic gan)
+            real_d_pred = self.net_d(self.gt).detach()
+            fake_g_pred_2x = self.net_d(self.output_2x)
+            l_g_real_2x = self.cri_gan(real_d_pred - torch.mean(fake_g_pred_2x), False, is_disc=False)
+            l_g_fake_2x = ( self.cri_gan(fake_g_pred_2x - torch.mean(real_d_pred), True, is_disc=False) ) / 2
+            l_g_gan_2x = (l_g_real_2x + l_g_fake_2x) / 2
+
+            l_g_total_2 += l_g_gan_2x
+            loss_dict['l_g_gan_2'] = l_g_gan_2x
+
+            l_g_total_2.backward()
             self.optimizer_g.step()
 
         # optimize net_d
