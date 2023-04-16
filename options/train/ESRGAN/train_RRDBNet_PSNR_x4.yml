@@ -10,8 +10,8 @@ datasets:
   train:
     name: DIV2K
     type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub
+    dataroot_gt: /home/bhuvan/Downloads/ImgSR/DIV2K_train_HR
+    dataroot_lq: /home/bhuvan/Downloads/ImgSR/DIV2K_train_LR_x4
     # (for lmdb)
     # dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub.lmdb
     # dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic_X4_sub.lmdb
@@ -26,16 +26,16 @@ datasets:
     use_rot: true
 
     # data loader
-    num_worker_per_gpu: 6
-    batch_size_per_gpu: 16
+    num_worker_per_gpu: 1
+    batch_size_per_gpu: 8
     dataset_enlarge_ratio: 100
     prefetch_mode: ~
 
   val:
     name: Set5
     type: PairedImageDataset
-    dataroot_gt: datasets/Set5/GTmod12
-    dataroot_lq: datasets/Set5/LRbicx4
+    dataroot_gt: /home/bhuvan/Downloads/ImgSR/Set14/GTmod12
+    dataroot_lq: /home/bhuvan/Downloads/ImgSR/Set14/LRbicx4
     io_backend:
       type: disk
 
@@ -45,14 +45,14 @@ network_g:
   num_in_ch: 3
   num_out_ch: 3
   num_feat: 64
-  num_block: 23
+  num_block: 10
   num_grow_ch: 32
 
 # path
 path:
-  pretrain_network_g: ~
+  pretrain_network_g: /home/bhuvan/Documents/BasicSR/experiments/051_RRDBNet_PSNR_x4_f64b23_DIV2K_1000k_B16G1_wandb/models/net_g_1500.pth
   strict_load_g: true
-  resume_state: ~
+  resume_state: /home/bhuvan/Documents/BasicSR/experiments/051_RRDBNet_PSNR_x4_f64b23_DIV2K_1000k_B16G1_wandb/training_states/1500.state
 
 # training settings
 train:
@@ -80,19 +80,19 @@ train:
 
 # validation settings
 val:
-  val_freq: !!float 5e3
-  save_img: false
+  val_freq: !!float 500
+  save_img: true
 
   metrics:
     psnr: # metric name, can be arbitrary
       type: calculate_psnr
       crop_border: 4
-      test_y_channel: false
+      test_y_channel: true
 
 # logging settings
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e3
+  save_checkpoint_freq: !!float 500
   use_tb_logger: true
   wandb:
     project: ~
