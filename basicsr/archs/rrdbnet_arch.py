@@ -149,7 +149,8 @@ class SpacialDenseBlock(nn.Module):
         super(SpacialDenseBlock, self).__init__()
         self.conv1 = nn.Conv2d(num_feat, num_grow_ch, 3, 1, 1)
         self.conv2 = nn.Conv2d(num_feat + num_grow_ch, num_grow_ch, 3, 1, 1)
-        self.conv3 = nn.Conv2d(num_feat + 2 * num_grow_ch, num_feat, 3, 1, 1)
+        self.conv3 = nn.Conv2d(num_feat + 2 * num_grow_ch, num_grow_ch, 3, 1, 1)
+        self.conv4 = nn.Conv2d(num_feat + 3 * num_grow_ch, num_feat, 3, 1, 1)
 
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
@@ -160,8 +161,9 @@ class SpacialDenseBlock(nn.Module):
         x1 = self.lrelu(self.conv1(x))
         x2 = self.lrelu(self.conv2(torch.cat((x, x1), 1)))
         x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2), 1)))
+        x4 = self.lrelu(self.conv4(torch.cat((x, x1, x2, x3), 1)))
         # Empirically, we use 0.2 to scale the residual for better performance
-        return x3 * 0.2 + x
+        return x4 * 0.2 + x
 
 class SpectralDenseBlock(nn.Module):
     """Residual Dense Block.
@@ -177,7 +179,8 @@ class SpectralDenseBlock(nn.Module):
         super(SpectralDenseBlock, self).__init__()
         self.conv1 = nn.Conv2d(num_feat, num_grow_ch, 3, 1, 1)
         self.conv2 = nn.Conv2d(num_feat + num_grow_ch, num_grow_ch, 3, 1, 1)
-        self.conv3 = nn.Conv2d(num_feat + 2 * num_grow_ch, num_feat, 3, 1, 1)
+        self.conv3 = nn.Conv2d(num_feat + 2 * num_grow_ch, num_grow_ch, 3, 1, 1)
+        self.conv4 = nn.Conv2d(num_feat + 3 * num_grow_ch, num_feat, 3, 1, 1)
 
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
@@ -193,9 +196,10 @@ class SpectralDenseBlock(nn.Module):
         x1 = self.lrelu(self.conv1(fft))
         x2 = self.lrelu(self.conv2(torch.cat((fft, x1), 1)))
         x3 = self.lrelu(self.conv3(torch.cat((fft, x1, x2), 1)))
-        x3 = torch.tensor_split(x3,2,dim=1)
-        x3 = torch.complex(x3[0],x3[1])
-        out = torch.fft.irfftn(x3,s=(h,w),dim=(2,3),norm='ortho')
+        x4 = self.lrelu(self.conv4(torch.cat((fft, x1, x2, x3), 1)))
+        x4 = torch.tensor_split(x4,2,dim=1)
+        x4 = torch.complex(x4[0],x4[1])
+        out = torch.fft.irfftn(x4,s=(h,w),dim=(2,3),norm='ortho')
 
         # Empirically, we use 0.2 to scale the residual for better performance
         return out * 0.2 + x
